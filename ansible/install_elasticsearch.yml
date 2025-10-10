@@ -1,0 +1,73 @@
+---
+- name: Install Elasticsearch
+  hosts: epd7897i4u5irhm7vgu4.auto.internal
+  become: true
+  vars:
+    elastic_mirror: "https://mirror.yandex.ru/mirrors/elastic/8/"
+    elastic_version: "8.19.5"
+    cluster_name: "elasticsearch"
+    node_name: "epd7897i4u5irhm7vgu4"
+
+  tasks:
+    - name: Install required packages
+      apt:
+        name:
+          - apt-transport-https
+          - ca-certificates
+          - curl
+          - gnupg
+        state: present
+        update_cache: yes
+
+    - name: Add Elasticsearch GPG key
+      ansible.builtin.apt_key:
+        url: "{{ elastic_mirror }}gpg.key"
+        state: present
+
+    - name: Add Elasticsearch repository
+      ansible.builtin.apt_repository:
+        repo: "deb [trusted=yes] {{ elastic_mirror }} stable main"
+        state: present
+
+    - name: Update apt cache
+      apt:
+        update_cache: yes
+
+    - name: Install Elasticsearch
+      apt:
+        name: elasticsearch={{ elastic_version }}
+        state: present
+
+    - name: Configure elasticsearch.yml
+      copy:
+        dest: /etc/elasticsearch/elasticsearch.yml
+        content: |
+          path.data: /var/lib/elasticsearch
+          path.logs: /var/log/elasticsearch
+
+          xpack.security.enabled: true
+          xpack.security.enrollment.enabled: false
+
+          xpack.security.http.ssl:
+            enabled: false
+            #keystore.path: certs/http.p12
+
+          xpack.security.transport.ssl:
+            enabled: false
+            #verification_mode: certificate
+            #keystore.path: certs/transport.p12
+            #truststore.path: certs/transport.p12
+
+          cluster.initial_master_nodes: ["{{ node_name }}"]
+
+          http.host: 0.0.0.0
+        owner: root
+        group: elasticsearch
+        mode: "0640"
+
+    - name: Enable and start Elasticsearch service
+      systemd:
+        name: elasticsearch
+        enabled: yes
+        state: started
+

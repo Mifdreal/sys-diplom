@@ -1,0 +1,24 @@
+---
+- name: Deploy static website
+  hosts: web
+  become: yes
+  tasks:
+    - name: Install Nginx
+      apt:
+        name: nginx
+        state: present
+        update_cache: yes
+
+    - name: Ensure Nginx is running
+      service:
+        name: nginx
+        state: started
+        enabled: yes
+
+    - name: Deploy website files
+      copy:
+        src: ../site/
+        dest: /var/www/html/
+        owner: www-data
+        group: www-data
+        mode: '0644'

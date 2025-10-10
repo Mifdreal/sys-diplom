@@ -1,0 +1,46 @@
+---
+- name: Install and configure Zabbix Agent on web servers
+  hosts: web
+  become: yes
+  vars:
+    zabbix_version: "6.0"
+    zabbix_server_ip: "fhm8k8jkfu1ein0fj8sg.auto.internal"
+    zabbix_agent_hostname: "{{ inventory_hostname }}"
+
+  tasks:
+    - name: Add Zabbix repository
+      apt:
+        deb: "https://repo.zabbix.com/zabbix/{{ zabbix_version }}/ubuntu/pool/main/z/zabbix-release/zabbix-release_{{ zabbix_version }}-6+ubuntu22.04_all.deb"
+        state: present
+
+    - name: Update apt cache
+      apt:
+        update_cache: yes
+
+    - name: Install Zabbix agent
+      apt:
+        name: zabbix-agent
+        state: present
+
+    - name: Configure Zabbix agent
+      lineinfile:
+        path: /etc/zabbix/zabbix_agentd.conf
+        regexp: '^#?{{ item.key }}='
+        line: '{{ item.key }}={{ item.value }}'
+      loop:
+        - { key: "Server", value: "{{ zabbix_server_ip }}" }
+        - { key: "ServerActive", value: "{{ zabbix_server_ip }}" }
+        - { key: "Hostname", value: "{{ zabbix_agent_hostname }}" }
+        - { key: "ListenPort", value: "10050" }
+        - { key: "ListenIP", value: "0.0.0.0" }
+        - { key: "EnableRemoteCommands", value: "1" }
+
+    - name: Ensure Zabbix agent service is running
+      service:
+        name: zabbix-agent
+        state: restarted
+        enabled: yes
+
+    - name: Allow Zabbix port in UFW (if enabled)
+      command: ufw allow 10050/tcp
+      ignore_errors: yes
