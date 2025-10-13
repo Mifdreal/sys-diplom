@@ -1,0 +1,4 @@
+---
+es_host: "epd7897i4u5irhm7vgu4.auto.internal"
+es_user: "elastic"
+es_pass: "{{ vault_es_pass }}"

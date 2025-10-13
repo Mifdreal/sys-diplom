@@ -1,0 +1,8 @@
+---
+elastic_mirror: "https://mirror.yandex.ru/mirrors/elastic/8/"
+elastic_version: "8.19.5"
+cluster_name: "elasticsearch"
+node_name: "{{ inventory_hostname }}"
+http_host: "0.0.0.0"
+path_data: "/var/lib/elasticsearch"
+path_logs: "/var/log/elasticsearch"

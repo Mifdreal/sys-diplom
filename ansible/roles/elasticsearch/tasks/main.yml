@@ -1,0 +1,59 @@
+---
+- name: Install required packages
+  apt:
+    name:
+      - apt-transport-https
+      - ca-certificates
+      - curl
+      - gnupg
+    state: present
+    update_cache: yes
+
+- name: Add Elasticsearch GPG key
+  ansible.builtin.apt_key:
+    url: "{{ elastic_mirror }}gpg.key"
+    state: present
+
+- name: Add Elasticsearch repository
+  ansible.builtin.apt_repository:
+    repo: "deb [trusted=yes] {{ elastic_mirror }} stable main"
+    state: present
+
+- name: Update apt cache
+  apt:
+    update_cache: yes
+
+- name: Install Elasticsearch
+  apt:
+    name: "elasticsearch={{ elastic_version }}"
+    state: present
+
+- name: Configure elasticsearch.yml
+  copy:
+    dest: /etc/elasticsearch/elasticsearch.yml
+    content: |
+      path.data: {{ path_data }}
+      path.logs: {{ path_logs }}
+
+      xpack.security.enabled: true
+      xpack.security.enrollment.enabled: false
+
+      xpack.security.http.ssl:
+        enabled: false
+
+      xpack.security.transport.ssl:
+        enabled: false
+
+      cluster.initial_master_nodes: ["{{ node_name }}"]
+
+      http.host: {{ http_host }}
+    owner: root
+    group: elasticsearch
+    mode: "0640"
+  notify: restart elasticsearch
+
+- name: Enable and start Elasticsearch service
+  systemd:
+    name: elasticsearch
+    enabled: yes
+    state: started

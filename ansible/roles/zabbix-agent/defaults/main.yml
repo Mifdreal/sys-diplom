@@ -1,0 +1,4 @@
+---
+zabbix_version: "6.0"
+zabbix_server_ip: "fhm8k8jkfu1ein0fj8sg.auto.internal"
+zabbix_agent_hostname: "{{ inventory_hostname }}"

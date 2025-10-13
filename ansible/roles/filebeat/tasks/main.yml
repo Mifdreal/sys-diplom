@@ -1,0 +1,41 @@
+---
+- name: Add Elastic repository from Yandex mirror
+  apt_repository:
+    repo: "deb [trusted=yes] https://mirror.yandex.ru/mirrors/elastic/8/ stable main"
+    state: present
+    filename: "elastic"
+
+- name: Install Filebeat
+  apt:
+    name: filebeat
+    state: present
+    update_cache: yes
+
+- name: Create simple Filebeat config
+  copy:
+    content: |
+      filebeat.inputs:
+      - type: log
+        enabled: true
+        paths:
+          - /var/log/*.log
+          - /var/log/syslog
+          - /var/log/nginx/*.log
+
+      output.elasticsearch:
+        hosts: ["http://{{ es_host }}:9200"]
+        username: "{{ es_user }}"
+        password: "{{ es_pass }}"
+
+      logging.level: info
+    dest: /etc/filebeat/filebeat.yml
+    owner: root
+    group: root
+    mode: 0640
+  notify: restart filebeat
+
+- name: Start and enable Filebeat
+  systemd:
+    name: filebeat
+    state: started
+    enabled: yes

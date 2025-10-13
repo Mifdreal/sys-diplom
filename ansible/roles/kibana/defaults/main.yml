@@ -1,0 +1,8 @@
+---
+kibana_port: 5601
+kibana_host: "0.0.0.0"
+
+elasticsearch_url: "http://epd7897i4u5irhm7vgu4.auto.internal:9200"
+
+elasticsearch_user: "kibana_system_user"
+elasticsearch_password: "{{ vault_elasticsearch_password }}"

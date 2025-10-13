@@ -1,0 +1,10 @@
+---
+- name: Install and configure Kibana
+  hosts: kibana
+  become: yes
+
+  vars_files:
+    - ../vault.yml
+
+  roles:
+    - kibana

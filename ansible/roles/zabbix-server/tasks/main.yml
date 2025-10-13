@@ -1,0 +1,77 @@
+---
+- name: Add Zabbix repository
+  apt:
+    deb: "https://repo.zabbix.com/zabbix/{{ zabbix_version }}/ubuntu/pool/main/z/zabbix-release/zabbix-release_{{ zabbix_version }}-6+ubuntu22.04_all.deb"
+    state: present
+
+- name: Update apt cache
+  apt:
+    update_cache: yes
+
+- name: Install Zabbix server, frontend, agent, and database
+  apt:
+    name:
+      - zabbix-server-mysql
+      - zabbix-frontend-php
+      - zabbix-apache-conf
+      - zabbix-sql-scripts
+      - zabbix-agent
+      - mysql-server
+    state: present
+
+- name: Ensure MySQL is running
+  service:
+    name: mysql
+    state: started
+    enabled: yes
+
+- name: Create Zabbix database
+  mysql_db:
+    name: "{{ db_name }}"
+    state: present
+    login_user: root
+
+- name: Create Zabbix database user
+  mysql_user:
+    name: "{{ db_user }}"
+    password: "{{ db_password }}"
+    priv: "{{ db_name }}.*:ALL"
+    state: present
+    login_user: root
+
+- name: Import initial schema and data
+  command: >
+    bash -c "zcat /usr/share/zabbix-sql-scripts/mysql/server.sql.gz |
+    mysql -u{{ db_user }} -p{{ db_password }} {{ db_name }}"
+  args:
+    creates: /var/lib/mysql/{{ db_name }}
+
+- name: Configure Zabbix server database connection
+  lineinfile:
+    path: /etc/zabbix/zabbix_server.conf
+    regexp: '^#?{{ item.key }}='
+    line: '{{ item.key }}={{ item.value }}'
+  loop:
+    - { key: "DBName", value: "{{ db_name }}" }
+    - { key: "DBUser", value: "{{ db_user }}" }
+    - { key: "DBPassword", value: "{{ db_password }}" }
+    - { key: "ListenIP", value: "0.0.0.0" }
+
+- name: Restart Zabbix and Apache services
+  service:
+    name: "{{ item }}"
+    state: restarted
+    enabled: yes
+  loop:
+    - zabbix-server
+    - zabbix-agent
+    - apache2
+
+- name: Enable services on boot
+  service:
+    name: "{{ item }}"
+    enabled: yes
+  loop:
+    - zabbix-server
+    - zabbix-agent
+    - apache2

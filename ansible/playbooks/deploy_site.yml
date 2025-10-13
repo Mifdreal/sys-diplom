@@ -1,0 +1,7 @@
+---
+- name: Deploy static website on web servers
+  hosts: web
+  become: yes
+
+  roles:
+    - site

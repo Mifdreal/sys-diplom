@@ -1,0 +1,44 @@
+---
+- name: Add Elastic repository from Yandex mirror
+  apt_repository:
+    repo: "deb [trusted=yes] https://mirror.yandex.ru/mirrors/elastic/8/ stable main"
+    state: present
+    filename: "elastic"
+
+- name: Install Kibana package
+  apt:
+    name: kibana
+    state: present
+    update_cache: yes
+
+- name: Create Kibana configuration
+  copy:
+    content: |
+      server.port: {{ kibana_port }}
+      server.host: "{{ kibana_host }}"
+
+      elasticsearch.hosts: ["{{ elasticsearch_url }}"]
+      elasticsearch.username: "{{ elasticsearch_user }}"
+      elasticsearch.password: "{{ elasticsearch_password }}"
+    dest: /etc/kibana/kibana.yml
+    owner: kibana
+    group: kibana
+    mode: '0644'
+  notify: restart kibana
+
+- name: Start and enable Kibana service
+  systemd:
+    name: kibana
+    state: started
+    enabled: yes
+    daemon_reload: yes
+
+- name: Wait for Kibana to start
+  wait_for:
+    port: "{{ kibana_port }}"
+    delay: 10
+    timeout: 60
+
+- name: Show Kibana status
+  debug:
+    msg: "Kibana is running on http://{{ inventory_hostname }}:{{ kibana_port }}"

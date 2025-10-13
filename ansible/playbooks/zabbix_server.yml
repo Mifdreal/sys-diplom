@@ -1,0 +1,10 @@
+---
+- name: Install and configure Zabbix Server
+  hosts: zabbix
+  become: yes
+
+  vars_files:
+    - ../vault.yml
+
+  roles:
+    - zabbix-server
